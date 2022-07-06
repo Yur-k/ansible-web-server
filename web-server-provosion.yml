@@ -1,0 +1,100 @@
+- hosts: web-server # remote host we want to provisin
+  remote_user: ubuntu
+  become: true # run a commands as root. We can specify which command to use (sudo or su) - "become_method: sudo"
+  gather_facts: no # find info about vm
+
+  tasks:
+    - name: Update all packages
+      apt:
+        update_cache: yes
+        name: "*"
+        state: latest
+    
+    - name: Install packages
+      apt:
+        pkg:
+          - ca-certificates
+          - curl              # download by url or test API
+          - gnupg             # allows you to encrypt and sign your data and communications
+          - htop              # resourse monitoring
+          - lsb-release
+    
+    # Installing docker
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+        keyring: /etc/apt/trusted.gpg.d/docker.gpg
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/docker.gpg] https://download.docker.com/linux/ubuntu focal stable"
+        state: present
+        filename: docker
+    
+    - name: Install docker
+      apt:
+        update_cache: yes
+        pkg:      
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+       
+    # Installing git
+    - name: Install git repo
+      apt_repository:
+       repo: 'ppa:git-core/ppa'
+       state: present
+    - name: Install git
+      apt:
+       name: git
+       state: present
+       update_cache: yes
+
+    - name: Copy ssh-key for github
+      become: no
+      template: 
+        src: /home/$USER/.ssh/id_rsa_github_to_instatses
+        dest: /home/ubuntu/.ssh/id_rsa_github_to_instatses
+        mode: '0600'  
+
+    - name: Create config in .ssh    
+      become: no
+      ansible.builtin.copy:
+        dest: /home/ubuntu/.ssh/config
+        content: |
+          Host github.com 
+           IdentityFile ~/.ssh/id_rsa_github_to_instatses
+
+    - name: Clone a repository into repos/flask-api
+      git:
+        repo: git@github.com:Yur-k/genesis-devops-shool-boilerplate.git
+        version: master
+        dest: /home/ubuntu/repos/flask-api
+        accept_hostkey: yes
+      become: no
+    
+    - name: Copy .env file 
+      template: 
+        src: .env 
+        dest: /home/ubuntu/repos/flask-api/.env
+
+    - name: Docker compose up -d
+      shell: docker compose up
+      args:
+        chdir: /home/ubuntu/repos/flask-api/
+
+
+    #   ansible.builtin.docker_compose:
+    #     project_src: /home/ubuntu/repos/flask-api/
+    #     state: present
+    #   register: output
+    # - debug:
+    #     var: output
+
+        
+
+
+
+
