@@ -1,5 +1,6 @@
 - hosts: web-server # remote host we want to provisin
   remote_user: ubuntu
+  ansible_ssh_private_key_file: /home/$USER/.ssh/id_rsa_key
   become: true # run a commands as root. We can specify which command to use (sudo or su) - "become_method: sudo"
   gather_facts: no # find info about vm
 
@@ -84,17 +85,3 @@
       shell: docker compose up
       args:
         chdir: /home/ubuntu/repos/flask-api/
-
-
-    #   ansible.builtin.docker_compose:
-    #     project_src: /home/ubuntu/repos/flask-api/
-    #     state: present
-    #   register: output
-    # - debug:
-    #     var: output
-
-        
-
-
-
-
